@@ -72,7 +72,7 @@ class ImageToTensor:
     (1, H, W).
 
     Args:
-        keys (Sequence[str]): Key of images to be converted to Tensor.
+        keys (Sequence[str]): Key of train to be converted to Tensor.
     """
 
     def __init__(self, keys):
@@ -260,7 +260,7 @@ class Collect:
     dictionary depends on "meta_keys". By default this includes:
 
         - "img_shape": shape of the image input to the network as a tuple \
-            (h, w, c).  Note that images may be zero padded on the \
+            (h, w, c).  Note that train may be zero padded on the \
             bottom/right if the batch tensor is larger than this shape.
 
         - "scale_factor": a float indicating the preprocessing scale

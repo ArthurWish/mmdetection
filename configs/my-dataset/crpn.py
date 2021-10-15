@@ -1,15 +1,8 @@
-_base_ = ['../cascade_rpn/crpn_faster_rcnn_r50_caffe_fpn_1x_coco.py']
+_base_ = '../cascade_rpn/crpn_faster_rcnn_r50_caffe_fpn_1x_coco.py'
 classes = ('merge',)
+dataset_type = 'CocoDataset'
 rpn_weight = 0.7
 model = dict(
-    type='SiameseRPNV2',
-    backbone=dict(
-        norm_cfg=dict(requires_grad=False),
-        norm_eval=True,
-        style='caffe',
-        init_cfg=dict(
-            type='Pretrained',
-            checkpoint='open-mmlab://detectron2/resnet50_caffe')),
     rpn_head=dict(
         _delete_=True,
         type='CascadeRPNHead',
@@ -59,26 +52,62 @@ model = dict(
         ]),
     roi_head=dict(
         bbox_head=dict(
+            bbox_coder=dict(target_stds=[0.04, 0.04, 0.08, 0.08]),
             num_classes=1,
-            )),
+            loss_cls=dict(
+                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.5),
+            loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0))),
     # model training and testing settings
-)
+    train_cfg=dict(
+        rpn=[
+            dict(
+                assigner=dict(
+                    type='RegionAssigner', center_ratio=0.2, ignore_ratio=0.5),
+                allowed_border=-1,
+                pos_weight=-1,
+                debug=False),
+            dict(
+                assigner=dict(
+                    type='MaxIoUAssigner',
+                    pos_iou_thr=0.7,
+                    neg_iou_thr=0.7,
+                    min_pos_iou=0.3,
+                    ignore_iof_thr=-1),
+                sampler=dict(
+                    type='RandomSampler',
+                    num=256,
+                    pos_fraction=0.5,
+                    neg_pos_ub=-1,
+                    add_gt_as_proposals=False),
+                allowed_border=-1,
+                pos_weight=-1,
+                debug=False)
+        ],
+        rpn_proposal=dict(max_per_img=300, nms=dict(iou_threshold=0.8)),
+        rcnn=dict(
+            assigner=dict(
+                pos_iou_thr=0.65, neg_iou_thr=0.65, min_pos_iou=0.65),
+            sampler=dict(type='RandomSampler', num=256))),
+    test_cfg=dict(
+        rpn=dict(max_per_img=300, nms=dict(iou_threshold=0.8)),
+        rcnn=dict(score_thr=1e-3)))
 data = dict(
-    samples_per_gpu=2,  # Batch size of a single GPU
-    workers_per_gpu=2,  # Worker to pre-fetch data for each single GPU
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(
-        img_prefix='my-dataset/train',
+        type=dataset_type,
         classes=classes,
         ann_file='my-dataset/train/train.json',
-    ),
+        img_prefix='my-dataset/train'),
     val=dict(
-        img_prefix='my-dataset/test',
+        type=dataset_type,
+        img_prefix='my-dataset/test/images',
         classes=classes,
-        ann_file='my-dataset/test/test.json',
+        ann_file='my-dataset/test/images/train.json'
     ),
     test=dict(
-        img_prefix='my-dataset/test',
+        type=dataset_type,
+        img_prefix='my-dataset/test/images',
         classes=classes,
-        ann_file='my-dataset/test/test.json',
-    )
-)
+        ann_file='my-dataset/test/images/train.json'))
+runner = dict(type=('EpochBasedRunner'), max_epochs=12)

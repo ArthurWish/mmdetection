@@ -100,7 +100,7 @@ class ConcatDataset(_ConcatDataset):
                 results_per_dataset = results[start_idx:end_idx]
                 print_log(
                     f'\nEvaluateing {dataset.ann_file} with '
-                    f'{len(results_per_dataset)} images now',
+                    f'{len(results_per_dataset)} train now',
                     logger=logger)
 
                 eval_results_per_dataset = dataset.evaluate(
@@ -181,14 +181,14 @@ class ClassBalancedDataset:
     "repeat factor".
     The repeat factor for an image is a function of the frequency the rarest
     category labeled in that image. The "frequency of category c" in [0, 1]
-    is defined by the fraction of images in the training set (without repeats)
+    is defined by the fraction of train in the training set (without repeats)
     in which category c appears.
     The dataset needs to instantiate :func:`self.get_cat_ids` to support
     ClassBalancedDataset.
 
     The repeat factor is computed as followed.
 
-    1. For each category c, compute the fraction # of images
+    1. For each category c, compute the fraction # of train
        that contain it: :math:`f(c)`
     2. For each category c, compute the category-level repeat factor:
        :math:`r(c) = max(1, sqrt(t/f(c)))`
@@ -202,7 +202,7 @@ class ClassBalancedDataset:
             no oversampling. For categories with ``f_c < oversample_thr``, the
             degree of oversampling following the square-root inverse frequency
             heuristic above.
-        filter_empty_gt (bool, optional): If set true, images without bounding
+        filter_empty_gt (bool, optional): If set true, train without bounding
             boxes will not be oversampled. Otherwise, they will be categorized
             as the pure background class and involved into the oversampling.
             Default: True.
@@ -228,7 +228,7 @@ class ClassBalancedDataset:
         self.flag = np.asarray(flags, dtype=np.uint8)
 
     def _get_repeat_factors(self, dataset, repeat_thr):
-        """Get repeat factor for each images in the dataset.
+        """Get repeat factor for each train in the dataset.
 
         Args:
             dataset (:obj:`CustomDataset`): The dataset
@@ -237,10 +237,10 @@ class ClassBalancedDataset:
                 it would be repeated.
 
         Returns:
-            list[float]: The repeat factors for each images in the dataset.
+            list[float]: The repeat factors for each train in the dataset.
         """
 
-        # 1. For each category c, compute the fraction # of images
+        # 1. For each category c, compute the fraction # of train
         #   that contain it: f(c)
         category_freq = defaultdict(int)
         num_images = len(dataset)
@@ -287,9 +287,9 @@ class ClassBalancedDataset:
 
 @DATASETS.register_module()
 class MultiImageMixDataset:
-    """A wrapper of multiple images mixed dataset.
+    """A wrapper of multiple train mixed dataset.
 
-    Suitable for training on multiple images mixed data augmentation like
+    Suitable for training on multiple train mixed data augmentation like
     mosaic and mixup. For the augmentation pipeline of mixed image data,
     the `get_indexes` method needs to be provided to obtain the image
     indexes, and you can set `skip_flags` to change the pipeline running

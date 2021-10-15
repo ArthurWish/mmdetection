@@ -8,13 +8,13 @@ import pytest
 from mmdet.datasets import MultiCocoDataset
 
 
-def _create_ids_error_coco_json(json_name):
+def _create_ids_error_multi_coco_json(json_name):
     sub_image = [{
         'id': 0,
-        'file_name': 'fake0.png'
+        'file_name': 'fake0'
     }, {
         'id': 1,
-        'file_name': 'fake1.png'
+        'file_name': 'fake1'
     }]
     image = {
         'id': 0,
@@ -59,7 +59,7 @@ def _create_ids_error_coco_json(json_name):
 def test_coco_annotation_ids_unique():
     tmp_dir = tempfile.TemporaryDirectory()
     fake_json_file = osp.join(tmp_dir.name, 'fake_data.json')
-    _create_ids_error_coco_json(fake_json_file)
+    _create_ids_error_multi_coco_json(fake_json_file)
 
     # test annotation ids not unique error
     with pytest.raises(AssertionError):

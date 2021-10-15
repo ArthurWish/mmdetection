@@ -57,7 +57,7 @@ class AutoAugment:
             policy in ``policies`` is a specific augmentation policy, and is
             composed by several augmentations (dict). When AutoAugment is
             called, a random policy in ``policies`` will be selected to
-            augment images.
+            augment train.
 
     Examples:
         >>> replace = (104, 116, 124)
@@ -283,7 +283,7 @@ class Shear:
                 results[mask_key] = results[mask_key][valid_inds]
 
     def __call__(self, results):
-        """Call function to shear images, bounding boxes, masks and semantic
+        """Call function to shear train, bounding boxes, masks and semantic
         segmentation maps.
 
         Args:
@@ -502,7 +502,7 @@ class Rotate:
                 results[mask_key] = results[mask_key][valid_inds]
 
     def __call__(self, results):
-        """Call function to rotate images, bounding boxes, masks and semantic
+        """Call function to rotate train, bounding boxes, masks and semantic
         segmentation maps.
 
         Args:
@@ -542,7 +542,7 @@ class Rotate:
 
 @PIPELINES.register_module()
 class Translate:
-    """Translate the images, bboxes, masks and segmentation maps horizontally
+    """Translate the train, bboxes, masks and segmentation maps horizontally
     or vertically.
 
     Args:
@@ -682,7 +682,7 @@ class Translate:
         return results
 
     def __call__(self, results):
-        """Call function to translate images, bounding boxes, masks and
+        """Call function to translate train, bounding boxes, masks and
         semantic segmentation maps.
 
         Args:
