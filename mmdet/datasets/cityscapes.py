@@ -24,16 +24,16 @@ class CityscapesDataset(CocoDataset):
                'bicycle')
 
     def _filter_imgs(self, min_size=32):
-        """Filter train too small or without ground truths."""
+        """Filter images too small or without ground truths."""
         valid_inds = []
-        # obtain train that contain annotation
+        # obtain images that contain annotation
         ids_with_ann = set(_['image_id'] for _ in self.coco.anns.values())
-        # obtain train that contain annotations of the required categories
+        # obtain images that contain annotations of the required categories
         ids_in_cat = set()
         for i, class_id in enumerate(self.cat_ids):
             ids_in_cat |= set(self.coco.cat_img_map[class_id])
         # merge the image id sets of the two conditions and use the merged set
-        # to filter out train if self.filter_empty_gt=True
+        # to filter out images if self.filter_empty_gt=True
         ids_in_cat &= ids_with_ann
 
         valid_img_ids = []
@@ -117,7 +117,7 @@ class CityscapesDataset(CocoDataset):
 
         Returns:
             list[str]: Result txt files which contains corresponding \
-                instance segmentation train.
+                instance segmentation images.
         """
         try:
             import cityscapesscripts.helpers.labels as CSLabels
@@ -229,8 +229,8 @@ class CityscapesDataset(CocoDataset):
                 "a/b/prefix.segm.json".
                 If results are evaluated with cityscapes protocol, it would be
                 the prefix of output txt/png files. The output files would be
-                png train under folder "a/b/prefix/xxx/" and the file name of
-                train would be written into a txt file
+                png images under folder "a/b/prefix/xxx/" and the file name of
+                images would be written into a txt file
                 "a/b/prefix/xxx_pred.txt", where "xxx" is the video name of
                 cityscapes. If not specified, a temp file will be created.
                 Default: None.
@@ -319,7 +319,7 @@ class CityscapesDataset(CocoDataset):
             '*/*_gtFine_instanceIds.png')
 
         groundTruthImgList = glob.glob(CSEval.args.groundTruthSearch)
-        assert len(groundTruthImgList), 'Cannot find ground truth train' \
+        assert len(groundTruthImgList), 'Cannot find ground truth images' \
             f' in {CSEval.args.groundTruthSearch}.'
         predictionImgList = []
         for gt in groundTruthImgList:

@@ -16,9 +16,9 @@ class XMLDataset(CustomDataset):
 
     Args:
         min_size (int | float, optional): The minimum size of bounding
-            boxes in the train. If the size of a bounding box is less than
+            boxes in the images. If the size of a bounding box is less than
             ``min_size``, it would be add to ignored field.
-        img_subdir (str): Subdir where train are stored. Default: JPEGImages.
+        img_subdir (str): Subdir where images are stored. Default: JPEGImages.
         ann_subdir (str): Subdir where annotations are. Default: Annotations.
     """
 
@@ -67,7 +67,7 @@ class XMLDataset(CustomDataset):
         return data_infos
 
     def _filter_imgs(self, min_size=32):
-        """Filter train too small or without annotation."""
+        """Filter images too small or without annotation."""
         valid_inds = []
         for i, img_info in enumerate(self.data_infos):
             if min(img_info['width'], img_info['height']) < min_size:

@@ -117,7 +117,7 @@ class LoadImageFromWebcam(LoadImageFromFile):
 
 @PIPELINES.register_module()
 class LoadMultiChannelImageFromFiles:
-    """Load multi-channel train from a list of separate channel files.
+    """Load multi-channel images from a list of separate channel files.
 
     Required keys are "img_prefix" and "img_info" (a dict that must contain the
     key "filename", which is expected to be a list of filenames).
@@ -146,14 +146,14 @@ class LoadMultiChannelImageFromFiles:
         self.file_client = None
 
     def __call__(self, results):
-        """Call functions to load multiple train and get train meta
+        """Call functions to load multiple images and get images meta
         information.
 
         Args:
             results (dict): Result dict from :obj:`mmdet.CustomDataset`.
 
         Returns:
-            dict: The dict contains loaded train and meta information.
+            dict: The dict contains loaded images and meta information.
         """
 
         if self.file_client is None:

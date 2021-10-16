@@ -46,9 +46,9 @@ class CustomDataset(Dataset):
         data_root (str, optional): Data root for ``ann_file``,
             ``img_prefix``, ``seg_prefix``, ``proposal_file`` if specified.
         test_mode (bool, optional): If set True, annotation will not be loaded.
-        filter_empty_gt (bool, optional): If set true, train without bounding
+        filter_empty_gt (bool, optional): If set true, images without bounding
             boxes of the dataset's classes will be filtered out. This option
-            only works when `test_mode=False`, i.e., we never filter train
+            only works when `test_mode=False`, i.e., we never filter images
             during tests.
     """
 
@@ -93,7 +93,7 @@ class CustomDataset(Dataset):
         else:
             self.proposals = None
 
-        # filter train too small and containing no annotations
+        # filter images too small and containing no annotations
         if not test_mode:
             valid_inds = self._filter_imgs()
             self.data_infos = [self.data_infos[i] for i in valid_inds]
@@ -151,10 +151,10 @@ class CustomDataset(Dataset):
         results['seg_fields'] = []
 
     def _filter_imgs(self, min_size=32):
-        """Filter train too small."""
+        """Filter images too small."""
         if self.filter_empty_gt:
             warnings.warn(
-                'CustomDataset does not support filtering empty gt train.')
+                'CustomDataset does not support filtering empty gt images.')
         valid_inds = []
         for i, img_info in enumerate(self.data_infos):
             if min(img_info['width'], img_info['height']) >= min_size:
@@ -328,7 +328,7 @@ class CustomDataset(Dataset):
         """Print the number of instance number."""
         dataset_type = 'Test' if self.test_mode else 'Train'
         result = (f'\n{self.__class__.__name__} {dataset_type} dataset '
-                  f'with number of train {len(self)}, '
+                  f'with number of images {len(self)}, '
                   f'and instance counts: \n')
         if self.CLASSES is None:
             result += 'Category names are not provided. \n'

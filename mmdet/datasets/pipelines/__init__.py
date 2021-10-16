@@ -9,7 +9,7 @@ from .instaboost import InstaBoost
 from .loading import (LoadAnnotations, LoadImageFromFile, LoadImageFromWebcam,
                       LoadMultiChannelImageFromFiles, LoadProposals)
 from .multi_transform import (MultiLoadImageFromFile, MultiResize, MultiRandomFlip, MultiNormalize, MultiPad,
-                              MultiDefaultFormatBundle)
+                              MultiDefaultFormatBundle, MultiImageToTensor)
 from .test_time_aug import MultiScaleFlipAug
 from .transforms import (Albu, CutOut, Expand, MinIoURandomCrop, MixUp, Mosaic,
                          Normalize, Pad, PhotoMetricDistortion, RandomAffine,
@@ -27,5 +27,5 @@ __all__ = [
     'Rotate', 'ColorTransform', 'EqualizeTransform', 'BrightnessTransform',
     'ContrastTransform', 'Translate', 'RandomShift', 'Mosaic', 'MixUp',
     'RandomAffine', 'MultiLoadImageFromFile', 'MultiResize', 'MultiRandomFlip',
-    'MultiNormalize', 'MultiPad', 'MultiDefaultFormatBundle'
+    'MultiNormalize', 'MultiPad', 'MultiDefaultFormatBundle', 'MultiImageToTensor'
 ]

@@ -28,7 +28,7 @@ except ImportError:
 
 @PIPELINES.register_module()
 class Resize:
-    """Resize train & bbox & mask.
+    """Resize images & bbox & mask.
 
     This transform resizes the input image to some scale. Bboxes and masks are
     then resized with the same scale factor. If the input dict contains the key
@@ -205,7 +205,7 @@ class Resize:
         results['scale_idx'] = scale_idx
 
     def _resize_img(self, results):
-        """Resize train with ``results['scale']``."""
+        """Resize images with ``results['scale']``."""
         for key in results.get('img_fields', ['img']):
             if self.keep_ratio:
                 img, scale_factor = mmcv.imrescale(
@@ -273,7 +273,7 @@ class Resize:
             results[key] = gt_seg
 
     def __call__(self, results):
-        """Call function to resize train, bounding boxes, masks, semantic
+        """Call function to resize images, bounding boxes, masks, semantic
         segmentation map.
 
         Args:
@@ -501,7 +501,7 @@ class RandomShift:
         }
 
     def __call__(self, results):
-        """Call function to random shift train, bounding boxes.
+        """Call function to random shift images, bounding boxes.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -610,7 +610,7 @@ class Pad:
             assert size is None or size_divisor is None
 
     def _pad_img(self, results):
-        """Pad train according to ``self.size``."""
+        """Pad images according to ``self.size``."""
         pad_val = self.pad_val.get('img', 0)
         for key in results.get('img_fields', ['img']):
             if self.pad_to_square:
@@ -643,7 +643,7 @@ class Pad:
                 results[key], shape=results['pad_shape'][:2], pad_val=pad_val)
 
     def __call__(self, results):
-        """Call function to pad train, masks, semantic segmentation maps.
+        """Call function to pad images, masks, semantic segmentation maps.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -684,7 +684,7 @@ class Normalize:
         self.to_rgb = to_rgb
 
     def __call__(self, results):
-        """Call function to normalize train.
+        """Call function to normalize images.
 
         Args:
             results (dict): Result dict from loading pipeline.
@@ -775,7 +775,7 @@ class RandomCrop:
         }
 
     def _crop_data(self, results, crop_size, allow_negative_crop):
-        """Function to randomly crop train, bounding boxes, masks, semantic
+        """Function to randomly crop images, bounding boxes, masks, semantic
         segmentation maps.
 
         Args:
@@ -872,7 +872,7 @@ class RandomCrop:
             return int(h * crop_h + 0.5), int(w * crop_w + 0.5)
 
     def __call__(self, results):
-        """Call function to randomly crop train, bounding boxes, masks,
+        """Call function to randomly crop images, bounding boxes, masks,
         semantic segmentation maps.
 
         Args:
@@ -967,13 +967,13 @@ class PhotoMetricDistortion:
         self.hue_delta = hue_delta
 
     def __call__(self, results):
-        """Call function to perform photometric distortion on train.
+        """Call function to perform photometric distortion on images.
 
         Args:
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Result dict with train distorted.
+            dict: Result dict with images distorted.
         """
 
         if 'img_fields' in results:
@@ -1072,13 +1072,13 @@ class Expand:
         self.prob = prob
 
     def __call__(self, results):
-        """Call function to expand train, bounding boxes.
+        """Call function to expand images, bounding boxes.
 
         Args:
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Result dict with train, bounding boxes expanded
+            dict: Result dict with images, bounding boxes expanded
         """
 
         if random.uniform(0, 1) > self.prob:
@@ -1172,14 +1172,14 @@ class MinIoURandomCrop:
         }
 
     def __call__(self, results):
-        """Call function to crop train and bounding boxes with minimum IoU
+        """Call function to crop images and bounding boxes with minimum IoU
         constraint.
 
         Args:
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Result dict with train and bounding boxes cropped, \
+            dict: Result dict with images and bounding boxes cropped, \
                 'img_shape' key is updated.
         """
 
@@ -1296,7 +1296,7 @@ class Corrupt:
             results (dict): Result dict from loading pipeline.
 
         Returns:
-            dict: Result dict with train corrupted.
+            dict: Result dict with images corrupted.
         """
 
         if corrupt is None:
@@ -1948,7 +1948,7 @@ class CutOut:
 class Mosaic:
     """Mosaic augmentation.
 
-    Given 4 train, mosaic transform combines them into
+    Given 4 images, mosaic transform combines them into
     one output image. The output image is composed of the parts from each sub-
     image.
 
@@ -1973,9 +1973,9 @@ class Mosaic:
 
      The mosaic transform steps are as follows:
 
-         1. Choose the mosaic center as the intersections of 4 train
+         1. Choose the mosaic center as the intersections of 4 images
          2. Get the left top image according to the index, and randomly
-            sample another 3 train from the custom dataset.
+            sample another 3 images from the custom dataset.
          3. Sub image will be cropped if image is larger than mosaic patch
 
     Args:
@@ -2121,7 +2121,7 @@ class Mosaic:
         Args:
             loc (str): Index for the sub-image, loc in ('top_left',
               'top_right', 'bottom_left', 'bottom_right').
-            center_position_xy (Sequence[float]): Mixing center for 4 train,
+            center_position_xy (Sequence[float]): Mixing center for 4 images,
                 (x, y).
             img_shape_wh (Sequence[int]): Width and height of sub-image
 
@@ -2303,7 +2303,7 @@ class MixUp:
 
         assert 'mix_results' in results
         assert len(
-            results['mix_results']) == 1, 'MixUp only support 2 train now !'
+            results['mix_results']) == 1, 'MixUp only support 2 images now !'
 
         if results['mix_results'][0]['gt_bboxes'].shape[0] == 0:
             # empty bbox

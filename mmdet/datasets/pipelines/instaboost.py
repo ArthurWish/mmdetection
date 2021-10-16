@@ -25,7 +25,7 @@ class InstaBoost:
             Default 15.
         theta (tuple): (min rotation degree, max rotation degree). \
             Default: (-1, 1).
-        color_prob (float): Probability of train for color augmentation.
+        color_prob (float): Probability of images for color augmentation.
             Default 0.5.
         heatmap_flag (bool): Whether to use heatmap guided. Default False.
         aug_ratio (float): Probability of applying this transformation. \

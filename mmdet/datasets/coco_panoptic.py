@@ -57,7 +57,7 @@ class COCOPanoptic(COCO):
         img_to_anns, cat_to_imgs = defaultdict(list), defaultdict(list)
         if 'annotations' in self.dataset:
             for ann, img_info in zip(self.dataset['annotations'],
-                                     self.dataset['train']):
+                                     self.dataset['images']):
                 img_info['segm_file'] = ann['file_name']
                 for seg_ann in ann['segments_info']:
                     # to match with instance.json
@@ -71,8 +71,8 @@ class COCOPanoptic(COCO):
                     else:
                         anns[seg_ann['id']] = [seg_ann]
 
-        if 'train' in self.dataset:
-            for img in self.dataset['train']:
+        if 'images' in self.dataset:
+            for img in self.dataset['images']:
                 imgs[img['id']] = img
 
         if 'categories' in self.dataset:
@@ -236,7 +236,7 @@ class CocoPanopticDataset(CocoDataset):
         img_id = self.data_infos[idx]['id']
         ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
         ann_info = self.coco.load_anns(ann_ids)
-        # filter out unmatched train
+        # filter out unmatched images
         ann_info = [i for i in ann_info if i['image_id'] == img_id]
         return self._parse_ann_info(self.data_infos[idx], ann_info)
 
@@ -304,9 +304,9 @@ class CocoPanopticDataset(CocoDataset):
         return ann
 
     def _filter_imgs(self, min_size=32):
-        """Filter train too small or without ground truths."""
+        """Filter images too small or without ground truths."""
         ids_with_ann = []
-        # check whether train have legal thing annotations.
+        # check whether images have legal thing annotations.
         for lists in self.coco.anns.values():
             for item in lists:
                 category_id = item['category_id']

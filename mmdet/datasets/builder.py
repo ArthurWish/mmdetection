@@ -111,7 +111,7 @@ def build_dataloader(dataset,
     rank, world_size = get_dist_info()
     if dist:
         # DistributedGroupSampler will definitely shuffle the data to satisfy
-        # that train on each GPU are in the same group
+        # that images on each GPU are in the same group
         if shuffle:
             sampler = DistributedGroupSampler(
                 dataset, samples_per_gpu, world_size, rank, seed=seed)

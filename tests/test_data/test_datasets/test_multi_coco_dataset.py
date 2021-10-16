@@ -11,10 +11,10 @@ from mmdet.datasets import MultiCocoDataset
 def _create_ids_error_multi_coco_json(json_name):
     sub_image = [{
         'id': 0,
-        'file_name': 'fake0'
+        'file_name': 'fake0.png'
     }, {
         'id': 1,
-        'file_name': 'fake1'
+        'file_name': 'fake1.png'
     }]
     image = {
         'id': 0,
