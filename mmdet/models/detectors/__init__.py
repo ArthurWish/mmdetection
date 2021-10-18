@@ -27,6 +27,7 @@ from .reppoints_detector import RepPointsDetector
 from .retinanet import RetinaNet
 from .rpn import RPN
 from .scnet import SCNet
+from .siamese_rpn_v2 import SiameseRPNV2
 from .single_stage import SingleStageDetector
 from .solo import SOLO
 from .sparse_rcnn import SparseRCNN
@@ -46,5 +47,5 @@ __all__ = [
     'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'PAA', 'YOLOV3', 'YOLACT',
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
     'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
-    'TwoStagePanopticSegmentor', 'PanopticFPN'
+    'TwoStagePanopticSegmentor', 'PanopticFPN', 'SiameseRPNV2'
 ]
