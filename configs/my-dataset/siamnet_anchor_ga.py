@@ -3,8 +3,12 @@ _base_ = [
     '../_base_/datasets/multi_coco_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
+
+sub_image_count = 1
+
 model = dict(
     type='SiameseRPNV2',
+    # type='SiameseRPNV3',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -82,7 +86,11 @@ model = dict(
             assigner=dict(pos_iou_thr=0.6, neg_iou_thr=0.6, min_pos_iou=0.6),
             sampler=dict(type='RandomSampler', num=256))),
     test_cfg=dict(
-        rpn=dict(nms_post=1000, max_per_img=300), rcnn=dict(score_thr=1e-3)))
+        rpn=dict(nms_post=1000, max_per_img=300), rcnn=dict(score_thr=1e-3)),
+    sub_image_count = sub_image_count
+)
+# optimizer
+optimizer = dict(lr=0.005)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -91,21 +99,18 @@ data = dict(
     samples_per_gpu=4,  # Batch size of a single GPU
     workers_per_gpu=4,  # Worker to pre-fetch data for each single GPU
     train=dict(
-        # img_prefix='my-dataset/train',
-        # classes=classes,
-        # ann_file='my-dataset/train/train.json',
         img_prefix='my-dataset/train',
         classes=classes,
-        ann_file='my-dataset/train/train.json',
+        ann_file='my-dataset/train/train_defaut.json',
     ),
     val=dict(
         img_prefix='my-dataset/test',
         classes=classes,
-        ann_file='my-dataset/test/test.json',
+        ann_file='my-dataset/test/test_default.json',
     ),
     test=dict(
         img_prefix='my-dataset/test',
         classes=classes,
-        ann_file='my-dataset/test/test.json',
+        ann_file='my-dataset/test/test_default.json',
     )
 )

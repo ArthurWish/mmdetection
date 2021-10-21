@@ -121,3 +121,7 @@ work_dirs/
 *.pth
 *.py~
 *.sh~
+
+my-dataset
+result
+dataset.zip

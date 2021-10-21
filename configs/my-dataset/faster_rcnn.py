@@ -11,8 +11,8 @@ model = dict(
             num_classes=1,)))
 classes = ('merge',)
 data = dict(
-    samples_per_gpu=4,  # Batch size of a single GPU
-    workers_per_gpu=4,  # Worker to pre-fetch data for each single GPU
+    samples_per_gpu=1,  # Batch size of a single GPU
+    workers_per_gpu=1,  # Worker to pre-fetch data for each single GPU
     train=dict(
         img_prefix='my-dataset/train',
         classes=classes,
@@ -29,3 +29,5 @@ data = dict(
         ann_file='my-dataset/test/test.json',
     )
 )
+optimizer = dict(type='SGD', lr=0.005, momentum=0.9, weight_decay=0.0001)
+

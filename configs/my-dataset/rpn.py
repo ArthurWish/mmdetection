@@ -1,21 +1,21 @@
-_base_ = '../rpn/rpn_r50_fpn_1x_coco.py'
-
-classes = ('merge',)
+_base_ = [
+    '../_base_/models/rpn_r50_fpn.py', '../_base_/datasets/multi_coco_detection.py',
+    '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+]
 data = dict(
+    samples_per_gpu=1,  # Batch size of a single GPU
+    workers_per_gpu=1,  # Worker to pre-fetch data for each single GPU
     train=dict(
-        img_prefix='my-dataset/images',
-        classes=classes,
-        ann_file='my-dataset/images/train.json'
+        img_prefix='my-dataset/train',
+        ann_file='my-dataset/train/train_defaut.json',
     ),
     val=dict(
-        img_prefix='my-dataset/test/images',
-        classes=classes,
-        ann_file='my-dataset/test/images/train.json'
+        img_prefix='my-dataset/test',
+        ann_file='my-dataset/test/test_default.json',
     ),
     test=dict(
-        img_prefix='my-dataset/test/images',
-        classes=classes,
-        ann_file='my-dataset/test/images/train.json'
+        img_prefix='my-dataset/test',
+        ann_file='my-dataset/test/test_default.json',
     )
 )
 runner = dict(type=('EpochBasedRunner'), max_epochs=12)
@@ -26,3 +26,4 @@ log_config = dict(
         dict(type='TensorboardLoggerHook')
     ]
 )
+evaluation = dict(interval=1, metric='proposal_fast')
