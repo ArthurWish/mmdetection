@@ -1,6 +1,9 @@
 _base_ = ['../cascade_rpn/crpn_faster_rcnn_r50_caffe_fpn_1x_coco.py']
 classes = ('merge',)
 rpn_weight = 0.7
+sub_images = [
+    'default.png'
+]
 model = dict(
     type='SiameseRPNV2',
     backbone=dict(
@@ -62,6 +65,7 @@ model = dict(
             num_classes=1,
             )),
     # model training and testing settings
+    sub_images=sub_images
 )
 data = dict(
     samples_per_gpu=2,  # Batch size of a single GPU
@@ -70,15 +74,18 @@ data = dict(
         img_prefix='my-dataset/train',
         classes=classes,
         ann_file='my-dataset/train/train.json',
+        sub_images=sub_images
     ),
     val=dict(
         img_prefix='my-dataset/test',
         classes=classes,
         ann_file='my-dataset/test/test.json',
+        sub_images=sub_images
     ),
     test=dict(
         img_prefix='my-dataset/test',
         classes=classes,
         ann_file='my-dataset/test/test.json',
+        sub_images=sub_images
     )
 )

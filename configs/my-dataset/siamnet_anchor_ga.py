@@ -1,10 +1,12 @@
 _base_ = [
     '../_base_/models/faster_rcnn_r50_fpn.py',
-    '../_base_/datasets/multi_coco_detection.py',
+    '../_base_/datasets/coco_with_sub_image_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
 ]
 
-sub_image_count = 1
+sub_images=[
+    'default.png'
+]
 
 model = dict(
     type='SiameseRPNV2',
@@ -87,7 +89,7 @@ model = dict(
             sampler=dict(type='RandomSampler', num=256))),
     test_cfg=dict(
         rpn=dict(nms_post=1000, max_per_img=300), rcnn=dict(score_thr=1e-3)),
-    sub_image_count = sub_image_count
+    sub_images = sub_images
 )
 # optimizer
 optimizer = dict(lr=0.005)
@@ -96,21 +98,24 @@ optimizer_config = dict(
 
 classes = ('merge',)
 data = dict(
-    samples_per_gpu=4,  # Batch size of a single GPU
-    workers_per_gpu=4,  # Worker to pre-fetch data for each single GPU
+    samples_per_gpu=1,  # Batch size of a single GPU
+    workers_per_gpu=1,  # Worker to pre-fetch data for each single GPU
     train=dict(
         img_prefix='my-dataset/train',
         classes=classes,
         ann_file='my-dataset/train/train_defaut.json',
+        sub_images=sub_images
     ),
     val=dict(
         img_prefix='my-dataset/test',
         classes=classes,
         ann_file='my-dataset/test/test_default.json',
+        sub_images=sub_images
     ),
     test=dict(
         img_prefix='my-dataset/test',
         classes=classes,
         ann_file='my-dataset/test/test_default.json',
+        sub_images=sub_images
     )
 )

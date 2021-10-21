@@ -1,5 +1,8 @@
 _base_ = '../faster_rcnn/faster_rcnn_r50_caffe_fpn_1x_coco.py'
 rpn_weight = 0.7
+sub_images=[
+    'default.png'
+]
 model = dict(
     # type='SiameseRPNV2',
     neck=dict(
@@ -105,16 +108,19 @@ data = dict(
         img_prefix='my-dataset/train',
         classes=classes,
         ann_file='my-dataset/train/train.json',
+        sub_images=sub_images
     ),
     val=dict(
         img_prefix='my-dataset/test/train',
         classes=classes,
         ann_file='my-dataset/test/train/train.json',
+        sub_images=sub_images
     ),
     test=dict(
         img_prefix='my-dataset/test/train',
         classes=classes,
         ann_file='my-dataset/test/train/train.json',
+        sub_images=sub_images        
     )
 )
 load_from = 'crpn_faster_rcnn_r50_caffe_fpn_1x_coco-c8283cca.pth  '

@@ -1,7 +1,10 @@
 _base_ = [
     '../_base_/models/faster_rcnn_r50_fpn.py',
-    '../_base_/datasets/multi_coco_detection.py',
+    '../_base_/datasets/coco_with_sub_image_detection.py',
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py'
+]
+sub_images=[
+    'default.png'
 ]
 # use caffe img_norm
 img_norm_cfg = dict(
@@ -128,7 +131,8 @@ model = dict(
             sampler=dict(type='RandomSampler', num=256))),
     test_cfg=dict(
         rpn=dict(max_per_img=300, nms=dict(iou_threshold=0.7)),
-        rcnn=dict(score_thr=1e-3)))
+        rcnn=dict(score_thr=1e-3)),
+    sub_images=sub_images)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 classes = ('merge',)
@@ -139,15 +143,18 @@ data = dict(
         img_prefix='my-dataset/train',
         classes=classes,
         ann_file='my-dataset/train/train.json',
+        sub_images=sub_images
     ),
     val=dict(
         img_prefix='my-dataset/test',
         classes=classes,
         ann_file='my-dataset/test/test.json',
+        sub_images=sub_images
     ),
     test=dict(
         img_prefix='my-dataset/test',
         classes=classes,
         ann_file='my-dataset/test/test.json',
+        sub_images=sub_images
     )
 )

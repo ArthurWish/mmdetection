@@ -16,7 +16,7 @@ class SiameseRPNV3(FasterRCNN):
                  neck=None,
                  pretrained=None,
                  init_cfg=None,
-                 sub_image_count=1):
+                 sub_images=()):
 
         super(SiameseRPNV3, self).__init__(
             backbone=backbone,
@@ -27,7 +27,7 @@ class SiameseRPNV3(FasterRCNN):
             test_cfg=test_cfg,
             pretrained=pretrained,
             init_cfg=init_cfg)
-        self.backbones = nn.ModuleList([build_backbone(backbone) for i in range(sub_image_count)])
+        self.backbones = nn.ModuleList([build_backbone(backbone) for i in sub_images])
 
 
     def extract_feat(self, imgs):

@@ -4,8 +4,8 @@ from torch import nn
 
 from .faster_rcnn import FasterRCNN
 from ..builder import DETECTORS
-
-
+from PIL import Image
+import numpy as np
 @DETECTORS.register_module()
 class SiameseRPNV2(FasterRCNN):
     def __init__(self,
@@ -17,7 +17,7 @@ class SiameseRPNV2(FasterRCNN):
                  neck=None,
                  pretrained=None,
                  init_cfg=None,
-                 sub_image_count=1):
+                 sub_images=()):
 
         super(SiameseRPNV2, self).__init__(
             backbone=backbone,
@@ -33,7 +33,13 @@ class SiameseRPNV2(FasterRCNN):
         assert isinstance(img, tuple) or isinstance(img, list)
         # feature_list = []
         # img = torch.cat([img[0], img[1]], dim=1)
+        img = img[0].detach().cpu().numpy()
+        im = np.squeeze(img, axis=0).transpose(1,2,0)
+        im = Image.fromarray(im, 'RGB')
+        im.save("xxresult.png")
+        
         out = self.backbone(img[0])
+
         # for input_img in img:
         #     feature = self.backbone(input_img)
         #     # List[list[tensor,tensor,tensor,tensor], list[tensor,tensor,tensor,tensor]]
