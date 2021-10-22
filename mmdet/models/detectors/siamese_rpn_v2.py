@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torchvision import transforms
 
 from .faster_rcnn import FasterRCNN
 from ..builder import DETECTORS

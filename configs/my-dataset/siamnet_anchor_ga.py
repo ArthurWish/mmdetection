@@ -103,19 +103,19 @@ data = dict(
     train=dict(
         img_prefix='my-dataset/train',
         classes=classes,
-        ann_file='my-dataset/train/train_defaut.json',
+        ann_file='my-dataset/train/train.json',
         sub_images=sub_images
     ),
     val=dict(
         img_prefix='my-dataset/test',
         classes=classes,
-        ann_file='my-dataset/test/test_default.json',
+        ann_file='my-dataset/test/test.json',
         sub_images=sub_images
     ),
     test=dict(
         img_prefix='my-dataset/test',
         classes=classes,
-        ann_file='my-dataset/test/test_default.json',
+        ann_file='my-dataset/test/test.json',
         sub_images=sub_images
     )
 )

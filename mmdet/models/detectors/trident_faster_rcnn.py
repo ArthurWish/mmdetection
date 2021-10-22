@@ -64,7 +64,7 @@ class TridentFasterRCNN(FasterRCNN):
         trident_gt_bboxes = tuple(gt_bboxes * self.num_branch)
         trident_gt_labels = tuple(gt_labels * self.num_branch)
         trident_img_metas = tuple(img_metas * self.num_branch)
-
+        img = img[0]
         return super(TridentFasterRCNN,
                      self).forward_train(img, trident_img_metas,
                                          trident_gt_bboxes, trident_gt_labels)
