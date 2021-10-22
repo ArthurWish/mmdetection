@@ -33,6 +33,7 @@ class SiameseRPN(FasterRCNN):
             pretrained=pretrained,
             init_cfg=init_cfg)
         self.num_branch = self.roi_head.num_branch
+        self.test_branch_idx = self.roi_head.test_branch_idx
         self.backbones = nn.ModuleList([build_backbone(backbone) for i in sub_images])
     
     def extract_feat(self, imgs):
@@ -50,3 +51,32 @@ class SiameseRPN(FasterRCNN):
         return super(SiameseRPN,
                      self).forward_train(img, trident_img_metas,
                                          trident_gt_bboxes, trident_gt_labels)
+
+    def simple_test(self, img, img_metas, proposals=None, rescale=False):
+        """Test without augmentation."""
+        assert self.with_bbox, 'Bbox head must be implemented.'
+        x = self.extract_feat(img)
+        if proposals is None:
+            num_branch = (self.num_branch if self.test_branch_idx == -1 else 1)
+            trident_img_metas = img_metas * num_branch
+            proposal_list = self.rpn_head.simple_test_rpn(x, trident_img_metas)
+        else:
+            proposal_list = proposals
+        # TODO： Fix trident_img_metas undefined errors
+        #  when proposals is specified
+        return self.roi_head.simple_test(
+            x, proposal_list, trident_img_metas, rescale=rescale)
+
+
+    def aug_test(self, imgs, img_metas, rescale=False):
+        """Test with augmentations.
+
+        If rescale is False, then returned bboxes and masks will fit the scale
+        of imgs[0].
+        """
+        x = self.extract_feats(imgs)
+        num_branch = (self.num_branch if self.test_branch_idx == -1 else 1)
+        trident_img_metas = [img_metas * num_branch for img_metas in img_metas]
+        proposal_list = self.rpn_head.aug_test_rpn(x, trident_img_metas)
+        return self.roi_head.aug_test(
+            x, proposal_list, img_metas, rescale=rescale)
