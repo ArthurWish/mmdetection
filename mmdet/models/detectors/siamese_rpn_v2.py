@@ -1,4 +1,3 @@
-from re import S
 import torch
 from torch import nn
 
@@ -28,17 +27,18 @@ class SiameseRPNV2(FasterRCNN):
             test_cfg=test_cfg,
             pretrained=pretrained,
             init_cfg=init_cfg)
+        self.sub_images = sub_images
 
-    def extract_feat(self, img):
-        assert isinstance(img, tuple) or isinstance(img, list)
+    def extract_feat(self, imgs):
+        assert len(imgs) == len(self.sub_images)
         # feature_list = []
         # img = torch.cat([img[0], img[1]], dim=1)
-        img = img[0].detach().cpu().numpy()
+        img = imgs[0].detach().cpu().numpy()
         im = np.squeeze(img, axis=0).transpose(1,2,0)
         im = Image.fromarray(im, 'RGB')
         im.save("xxresult.png")
         
-        out = self.backbone(img[0])
+        out = self.backbone(imgs[0])
 
         # for input_img in img:
         #     feature = self.backbone(input_img)
@@ -58,9 +58,23 @@ class SiameseRPNV2(FasterRCNN):
         if self.with_neck:
             out = self.neck(out)
         return out
+    
+    def forward_dummy(self, imgs):
+        outs = ()
+        # backbone
+        x = self.extract_feat(imgs)
+        # rpn
+        if self.with_rpn:
+            rpn_outs = self.rpn_head(x)
+            outs = outs + (rpn_outs, )
+        proposals = torch.randn(1000, 4).to(imgs[0].device)
+        # roi_head
+        roi_outs = self.roi_head.forward_dummy(x, proposals)
+        outs = outs + (roi_outs, )
+        return outs
 
     def forward_train(self,
-                      img,
+                      imgs,
                       img_metas,
                       gt_bboxes,
                       gt_labels,
@@ -68,7 +82,7 @@ class SiameseRPNV2(FasterRCNN):
                       gt_masks=None,
                       proposals=None,
                       **kwargs):
-        x = self.extract_feat(img)
+        x = self.extract_feat(imgs)
         losses = dict()
         # RPN forward and loss
         if self.with_rpn:
@@ -93,21 +107,21 @@ class SiameseRPNV2(FasterRCNN):
 
         return losses
 
-    def forward_test(self, imgs, img_metas, **kwargs):
-        for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
+    def forward_test(self, imgs_list, img_metas, **kwargs):
+        for var, name in [(imgs_list, 'imgs_list'), (img_metas, 'img_metas')]:
             if not isinstance(var, list):
                 raise TypeError(f'{name} must be a list, but got {type(var)}')
 
-        num_augs = len(imgs)
+        num_augs = len(imgs_list)
         if num_augs != len(img_metas):
-            raise ValueError(f'num of augmentations ({len(imgs)}) '
+            raise ValueError(f'num of augmentations ({len(imgs_list)}) '
                              f'!= num of image meta ({len(img_metas)})')
 
-        for img, img_meta in zip(imgs, img_metas):
+        for imgs, img_meta in zip(imgs_list, img_metas):
             batch_size = len(img_meta)
             for img_id in range(batch_size):
                 img_meta[img_id]['batch_input_shape'] = tuple(
-                    img[0].size()[-2:])
+                    imgs[0].size()[-2:])
         if num_augs == 1:
             # proposals (List[List[Tensor]]): the outer list indicates
             # test-time augs (multiscale, flip, etc.) and the inner list
@@ -116,11 +130,27 @@ class SiameseRPNV2(FasterRCNN):
             # proposals.
             if 'proposals' in kwargs:
                 kwargs['proposals'] = kwargs['proposals'][0]
-            return self.simple_test(imgs[0], img_metas[0], **kwargs)
+            return self.simple_test(imgs_list[0], img_metas[0], **kwargs)
         else:
-            assert imgs[0][0].size(0) == 1, 'aug test does not support ' \
+            assert imgs_list[0][0].size(0) == 1, 'aug test does not support ' \
                                             'inference with batch size ' \
-                                            f'{imgs[0][0].size(0)}'
+                                            f'{imgs_list[0][0].size(0)}'
             # TODO: support test augmentation for predefined proposals
             assert 'proposals' not in kwargs
-            return self.aug_test(imgs, img_metas, **kwargs)
+            return self.aug_test(imgs_list, img_metas, **kwargs)
+
+    def onnx_export(self, imgs, img_metas):
+
+        img_shape = torch._shape_as_tensor(imgs[0])[2:]
+        img_metas[0]['img_shape_for_onnx'] = img_shape
+        x = self.extract_feat(imgs)
+        proposals = self.rpn_head.onnx_export(x, img_metas)
+        if hasattr(self.roi_head, 'onnx_export'):
+            return self.roi_head.onnx_export(x, proposals, img_metas)
+        else:
+            raise NotImplementedError(
+                f'{self.__class__.__name__} can not '
+                f'be exported to ONNX. Please refer to the '
+                f'list of supported models,'
+                f'https://mmdetection.readthedocs.io/en/latest/tutorials/pytorch2onnx.html#list-of-supported-models-exportable-to-onnx'  # noqa E501
+            )
