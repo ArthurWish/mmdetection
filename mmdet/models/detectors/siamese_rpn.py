@@ -62,18 +62,11 @@ class SiameseRPN(FasterRCNN):
             proposal_list = self.rpn_head.simple_test_rpn(x, trident_img_metas)
         else:
             proposal_list = proposals
-        # TODO： Fix trident_img_metas undefined errors
-        #  when proposals is specified
         return self.roi_head.simple_test(
             x, proposal_list, trident_img_metas, rescale=rescale)
 
 
     def aug_test(self, imgs, img_metas, rescale=False):
-        """Test with augmentations.
-
-        If rescale is False, then returned bboxes and masks will fit the scale
-        of imgs[0].
-        """
         x = self.extract_feats(imgs)
         num_branch = (self.num_branch if self.test_branch_idx == -1 else 1)
         trident_img_metas = [img_metas * num_branch for img_metas in img_metas]
