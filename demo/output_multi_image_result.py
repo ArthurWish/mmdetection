@@ -1,31 +1,111 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import asyncio
 from argparse import ArgumentParser
+from PIL import Image
+from matplotlib import patches
+from matplotlib.collections import PathCollection, PolyCollection
+from matplotlib.patches import Polygon
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+import cv2
 from mmdet.apis import (async_inference_detector, inference_detector,
                         init_detector, show_result_pyplot)
 import os
+import json
+import numpy as np
 
 
-def main(config, checkpoint, img_root_path):
+def predict_img(img_root, img_root_path, img_suffix):
+    """use trained model to predict image
+    """
+    if img_suffix == 'filled.png':
+        config = ''
+        checkpoint = ''
+    elif img_suffix == 'default.png':
+        config = './configs/my-dataset/ga_rpn.py'
+        checkpoint = './work_dirs/siamnet_anchor_ga/img_default/latest.pth'
+    else:
+        raise "invalid image suffix, please use filled or default"
     # build the model from a config file and a checkpoint file
     model = init_detector(config, checkpoint, device='cuda')
-    for i in os.listdir(img_root_path):
-        if os.path.splitext(i)[1] == '.json':
-            continue
-        # img_path = os.path.join(i, 'filled.png')
-        img_path = os.path.join(i, 'default.png')
-        img = img_root_path + img_path
-        # test a single image
-        result = inference_detector(model, img)
-        # show the results
-        # show_result_pyplot(model, img, result, score_thr=0.3)
-        out_file = f'./result/img_default/{img_path}'
-        model.show_result(img, result, out_file=out_file)
-# /home/clq/Desktop/cyn-workspace/remote-ui-detection/configs/my-dataset/siamnet_anchor_ga.py
+    # img_filled = os.path.join(i, 'filled.png')
+    img = os.path.join(img_root_path, img_root, img_suffix)
+    # test a single image
+    result = inference_detector(model, img)
+    # show the results
+    # show_result_pyplot(model, img, result, score_thr=0.3)
+    out_file = f'./result/img_default/{img}'
+    # model.show_result(img, result, out_file=out_file) save the predict img to file
+    return model.show_result(img, result, bbox_color=(0, 0, 255), show=False)
+
+
+def plot_gt_label(img_root, img_root_path, label_file_path, out_file=None, win_name='', thickness=2):
+    """plot img with bbox
+
+    Args:
+        img ([type]): img file path
+        img_root_name ([type]): img root name
+        label_file_path ([type]): the json file
+        out_file ([type], optional): [description]. Defaults to None.
+        win_name (str, optional): [description]. Defaults to ''.
+        thickness (int, optional): [description]. Defaults to 1.
+    """
+    img = os.path.join(img_root_path, img_root, 'default.png')
+    img = plt.imread(img)
+    fig, ax = plt.subplots(1, 1)
+    ax.imshow(img)
+    currentAxis = fig.gca()
+    bboxes = []
+    coords = []
+    with open(label_file_path) as f:
+        data = json.loads(f.read())
+    for j in range(len(data["images"])):
+        if data["images"][j]["file_name"] == img_root:
+            id = j
+            break
+
+    for i in range(len(data["annotations"])):
+        if data["images"][id]["id"] == data["annotations"][i]["image_id"]:
+            bbox = data["annotations"][i]["bbox"]
+            bboxes.append(bbox)
+    total_obj = len(bboxes)
+    bboxes = np.array(bboxes)
+
+    for i, bbox in enumerate(bboxes):
+        bbox_int = bbox.astype(np.int32)
+        coords.append([bbox_int[0], bbox_int[1], bbox_int[2], bbox_int[3]])
+
+    for _, coord in enumerate(coords):
+        rect = patches.Rectangle((coord[0], coord[1]), coord[2], coord[3],
+                                 linewidth=thickness, edgecolor='r', facecolor='none')
+        currentAxis.add_patch(rect)
+    plt.title(f'total_obj:{total_obj}')
+    plt.axis('off')
+    if out_file is not None:
+        plt.savefig(out_file, pad_inches=0.0, bbox_inches='tight')
+    return plt.imread(out_file)
+
+
+def concat_img(img1, img2, img_root, orientation='horizontal', save_dir='demo/result'):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    w1, h1, _ = img1.shape
+    img1 = cv2.resize(img1, (w1, w1), interpolation = cv2.INTER_CUBIC)
+    img2 = cv2.resize(img2, (w1, w1), interpolation = cv2.INTER_CUBIC)
+    if orientation == 'horizontal':
+        img_concat = np.vstack([img1, img2])
+        cv2.imwrite(os.path.join(save_dir, f'{img_root}.png'), img_concat)
 
 if __name__ == '__main__':
-    config = './configs/my-dataset/ga_rpn.py'
-    checkpoint = './work_dirs/siamnet_anchor_ga/img_default/epoch_4.pth'
-    img_root_path = './my-dataset/test/'
 
-    main(config, checkpoint, img_root_path)
+    img_root_path = './my-dataset/test/'
+    with open(img_root_path + 'test.json') as f:
+        data = json.loads(f.read())
+    for i in tqdm(range(len(data["images"]))):
+        img_root = data["images"][i]["file_name"]
+        img_pred = predict_img(img_root, img_root_path, img_suffix='default.png')
+        img_oringin = plot_gt_label(img_root, img_root_path, label_file_path=img_root_path +
+                                    'test.json', out_file='demo/result.png')
+        img_oringin = cv2.cvtColor(img_oringin, cv2.COLOR_RGBA2BGR)
+        img_oringin = img_oringin * 255.0
+        concat_img(img_pred, img_oringin, img_root)
