@@ -1,10 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import asyncio
-from argparse import ArgumentParser
+from re import X
 from PIL import Image
 from matplotlib import patches
-from matplotlib.collections import PathCollection, PolyCollection
-from matplotlib.patches import Polygon
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import cv2
@@ -19,10 +17,10 @@ def predict_img(img_root, img_root_path, img_suffix):
     """use trained model to predict image
     """
     if img_suffix == 'filled.png':
-        config = ''
-        checkpoint = ''
+        config = './configs/my-dataset/siamnet_ga_filled.py'
+        checkpoint = './work_dirs/siamnet_anchor_ga/img_filled/latest.pth'
     elif img_suffix == 'default.png':
-        config = './configs/my-dataset/ga_rpn.py'
+        config = './configs/my-dataset/siamnet_ga_default.py'
         checkpoint = './work_dirs/siamnet_anchor_ga/img_default/latest.pth'
     else:
         raise "invalid image suffix, please use filled or default"
@@ -32,11 +30,7 @@ def predict_img(img_root, img_root_path, img_suffix):
     img = os.path.join(img_root_path, img_root, img_suffix)
     # test a single image
     result = inference_detector(model, img)
-    # show the results
-    # show_result_pyplot(model, img, result, score_thr=0.3)
-    out_file = f'./result/img_default/{img}'
-    # model.show_result(img, result, out_file=out_file) save the predict img to file
-    return model.show_result(img, result, bbox_color=(0, 0, 255), show=False)
+    return model.show_result(img, result, bbox_color=(0, 0, 255), show=False, score_thr=0.3)
 
 
 def plot_gt_label(img_root, img_root_path, label_file_path, out_file=None, win_name='', thickness=2):
@@ -86,14 +80,16 @@ def plot_gt_label(img_root, img_root_path, label_file_path, out_file=None, win_n
     return plt.imread(out_file)
 
 
-def concat_img(img1, img2, img_root, orientation='horizontal', save_dir='demo/result'):
+def concat_img(img_list: list, img_root, orientation='horizontal', save_dir='demo/result'):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    w1, h1, _ = img1.shape
-    img1 = cv2.resize(img1, (w1, w1), interpolation = cv2.INTER_CUBIC)
-    img2 = cv2.resize(img2, (w1, w1), interpolation = cv2.INTER_CUBIC)
+    w1, h1, _ = img_list[0].shape
+    img_reshaped = []
+    for img in img_list:
+        img = cv2.resize(img, (w1, w1), interpolation = cv2.INTER_CUBIC)
+        img_reshaped.append(img)
     if orientation == 'horizontal':
-        img_concat = np.vstack([img1, img2])
+        img_concat = np.concatenate((img_reshaped), axis=1)
         cv2.imwrite(os.path.join(save_dir, f'{img_root}.png'), img_concat)
 
 if __name__ == '__main__':
@@ -103,9 +99,10 @@ if __name__ == '__main__':
         data = json.loads(f.read())
     for i in tqdm(range(len(data["images"]))):
         img_root = data["images"][i]["file_name"]
-        img_pred = predict_img(img_root, img_root_path, img_suffix='default.png')
+        img_pred_default = predict_img(img_root, img_root_path, img_suffix='default.png')
+        img_pred_filled = predict_img(img_root, img_root_path, img_suffix='filled.png')
         img_oringin = plot_gt_label(img_root, img_root_path, label_file_path=img_root_path +
                                     'test.json', out_file='demo/result.png')
         img_oringin = cv2.cvtColor(img_oringin, cv2.COLOR_RGBA2BGR)
         img_oringin = img_oringin * 255.0
-        concat_img(img_pred, img_oringin, img_root)
+        concat_img([img_pred_default, img_pred_filled, img_oringin], img_root)
