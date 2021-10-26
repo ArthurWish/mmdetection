@@ -1,9 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
-import asyncio
-from re import X
+import copy
+import warnings
 from PIL import Image
 from matplotlib import patches
 from mmcv.ops.nms import nms
+from mmcv.ops import RoIPool
+from mmcv.parallel import collate, scatter
 import torch
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -15,6 +17,7 @@ import json
 import numpy as np
 
 from mmdet.core.post_processing.bbox_nms import multiclass_nms
+from mmdet.datasets.pipelines.compose import Compose
 from tools.analysis_tools.analyze_results import bbox_map_eval
 
 
@@ -58,15 +61,59 @@ def NMS(dets, thresh):
         order = order[inds + 1]
     return dets[temp]
 
+def replace_MultiImageToTensor(pipelines):
+    """Replace the MultiImageToTensor transform in a data pipeline to
+    MultiDefaultFormatBundle, which is normally useful in batch inference.
 
-def predict_img(model, img_root, img_root_path, img_suffix):
-    """use trained model to predict image
+    Args:
+        pipelines (list[dict]): Data pipeline configs.
 
-        return 
+    Returns:
+        list: The new pipeline list with all MultiImageToTensor replaced by
+            MultiDefaultFormatBundle.
     """
-    img = os.path.join(img_root_path, img_root, img_suffix)
-    # test a single image
-    result = inference_detector(model, img)
+    pipelines = copy.deepcopy(pipelines)
+    for i, pipeline in enumerate(pipelines):
+        if pipeline['type'] == 'MultiScaleFlipAug':
+            assert 'transforms' in pipeline
+            pipeline['transforms'] = replace_MultiImageToTensor(
+                pipeline['transforms'])
+        elif pipeline['type'] == 'MultiImageToTensor':
+            warnings.warn(
+                '"MultiImageToTensor" pipeline is replaced by '
+                '"MultiDefaultFormatBundle" for batch inference. It is '
+                'recommended to manually replace it in the test '
+                'data pipeline in your config file.', UserWarning)
+            pipelines[i] = {'type': 'MultiDefaultFormatBundle'}
+    return pipelines
+
+def predict_img(model, img_path, sub_images = ()):
+    """predict image with trained model
+
+    Args:
+        model (nn.Module): trained model with pipeline is multi input format
+        img_path (str): the folder where sub_images store
+        sub_images (tuple, optional): the sub_images to predict. Defaults to ().
+
+    Returns:
+        predict_bbox: the result of model predicted bboxes 
+    """    
+    imgs = [os.path.join(img_path,sub_image) for sub_image in sub_images ]
+    cfg = model.cfg
+    device = next(model.parameters()).device
+    pipeline = replace_MultiImageToTensor(cfg.data.test.pipeline)
+    test_pipeline = Compose(pipeline)
+    data = dict(img_info=dict(filename=imgs), img_prefix=None)
+    data = test_pipeline(data)
+    data = collate([data], samples_per_gpu=1)
+    data['img_metas'] = [img_metas.data[0] for img_metas in data['img_metas']]
+    data['img'] = [[img.data[0] for img in imgs] for imgs in data['img']]
+    if next(model.parameters()).is_cuda:
+        # scatter to specified GPU
+        data = scatter(data, [device])[0]
+    with torch.no_grad():
+        result = model(return_loss=False, rescale=True, **data)
+
     return result, model.show_result(img, result, bbox_color=(0, 0, 255), show=False, score_thr=0.3)
 
 
@@ -175,35 +222,28 @@ def concat_img(img_list: list, img_root, orientation='horizontal', save_dir='dem
         img_concat = np.concatenate((img_reshaped), axis=1)
         cv2.imwrite(os.path.join(save_dir, f'{img_root}.png'), img_concat)
 
-
-def init_model(img_suffix):
-    if img_suffix == 'filled.png':
-        config = './configs/my-dataset/siamnet_ga_filled.py'
-        checkpoint = './work_dirs/siamnet_anchor_ga/img_filled/latest.pth'
-    elif img_suffix == 'default.png':
-        config = './configs/my-dataset/siamnet_ga_default.py'
-        checkpoint = './work_dirs/siamnet_anchor_ga/img_default/latest.pth'
-    else:
-        raise "invalid image suffix, please use filled or default"
-    # build the model from a config file and a checkpoint file
-    return init_detector(config, checkpoint, device='cuda')
-
-
 if __name__ == '__main__':
 
     img_root_path = './my-dataset/test/'
+
     with open(img_root_path + 'test.json') as f:
-        data = json.loads(f.read())
-    model_filled = init_model('filled.png')
-    model_default = init_model('default.png')
-    for i in tqdm(range(len(data["images"]))):
-        img_root = data["images"][i]["file_name"]
-        # merge_proposal(img_root, img_root_path, ('filled.png',
-        #                'default.png'), (model_filled, model_default))
+        coco_data = json.load(f)
+    
+    filled_config = './configs/my-dataset/siamnet_ga_filled.py'
+    filled_checkpoint = './work_dirs/siamnet_anchor_ga/img_filled/latest.pth'
+    
+    default_config = './configs/my-dataset/siamnet_ga_default.py'
+    default_checkpoint = './work_dirs/siamnet_anchor_ga/img_default/latest.pth'
+
+    model_filled = init_detector(filled_config, filled_checkpoint, device='cuda')
+    model_default = init_detector(default_config, default_checkpoint, device='cuda')
+
+    for img in tqdm(coco_data["images"]):
+        img_root = os.path.join(img_root_path,img["file_name"])
         result_f, img_pred_default = predict_img(
-            model_default, img_root, img_root_path, img_suffix='default.png')
+            model_default, img_root, ('default.png',))
         result_d, img_pred_filled = predict_img(
-            model_filled, img_root, img_root_path, img_suffix='filled.png')
+            model_default, img_root, ('filled.png',))
         merge_proposal(img_root, img_root_path, result_d, result_f)
         img_oringin = plot_gt_label(img_root, img_root_path, label_file_path=img_root_path +
                                     'test.json', out_file='demo/result.png')

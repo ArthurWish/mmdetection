@@ -27,25 +27,25 @@ class SiameseRPNV3(FasterRCNN):
             test_cfg=test_cfg,
             pretrained=pretrained,
             init_cfg=init_cfg)
-        self.backbones = nn.ModuleList([build_backbone(backbone) for i in sub_images])
+        self.backbones = nn.ModuleList([build_backbone(backbone) for _ in sub_images])
 
 
     def extract_feat(self, imgs):
         assert isinstance(imgs, tuple) or isinstance(imgs, list)
         feature_list = [self.backbones[i](img) for i,img in enumerate(imgs)]
         feature_concat = tuple(torch.cat(x, dim=1) for x in zip(*feature_list))
-        out = [
-            nn.Sequential(
-                nn.Conv2d(feature_concat_channel.size(1), int(
-                    feature_concat_channel.size(1) / len(imgs)), kernel_size=1),
-                nn.BatchNorm2d(int(feature_concat_channel.size(1) / len(imgs))),
-                nn.ReLU()
-            ).cuda()(feature_concat_channel)
-            for feature_concat_channel in feature_concat
-        ] if len(imgs) > 1 else feature_concat
+        # out = [
+        #     nn.Sequential(
+        #         nn.Conv2d(feature_concat_channel.size(1), int(
+        #             feature_concat_channel.size(1) / len(imgs)), kernel_size=1),
+        #         nn.BatchNorm2d(int(feature_concat_channel.size(1) / len(imgs))),
+        #         nn.ReLU()
+        #     ).cuda()(feature_concat_channel)
+        #     for feature_concat_channel in feature_concat
+        # ] if len(imgs) > 1 else feature_concat
         
         if self.with_neck:
-            out = self.neck(out)
+            out = self.neck(feature_concat)
         return out
 
     def forward_train(self,
