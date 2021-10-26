@@ -5,12 +5,13 @@ _base_ = [
 ]
 
 sub_images=[
+    'filled.png',
     'default.png'
 ]
 
 model = dict(
-    type='SiameseRPNV2',
-    # type='SiameseRPNV3',
+    # type='SiameseRPNV2',
+    type='SiameseRPNV3',
     backbone=dict(
         type='ResNet',
         depth=50,
@@ -23,14 +24,14 @@ model = dict(
         init_cfg=dict(type='Pretrained', checkpoint='torchvision://resnet50')),
     neck=dict(
         type='FPN',
-        in_channels=[256, 512, 1024, 2048],
-        out_channels=256,
+        in_channels=[512, 1024, 2048, 4096],
+        out_channels=512,
         num_outs=5),
     rpn_head=dict(
         _delete_=True,
         type='GARPNHead',
-        in_channels=256,
-        feat_channels=256,
+        in_channels=512,
+        feat_channels=512,
         approx_anchor_generator=dict(
             type='AnchorGenerator',
             octave_base_scale=8,
@@ -62,7 +63,13 @@ model = dict(
             type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0),
         loss_bbox=dict(type='SmoothL1Loss', beta=1.0, loss_weight=1.0)),
     roi_head=dict(
+        bbox_roi_extractor=dict(
+            type='SingleRoIExtractor',
+            roi_layer=dict(type='RoIAlign', output_size=7, sampling_ratio=0),
+            out_channels=512,
+            featmap_strides=[4, 8, 16, 32]),
         bbox_head=dict(
+            in_channels=512,
             num_classes=1,
             bbox_coder=dict(target_stds=[0.05, 0.05, 0.1, 0.1]))),
     # model training and testing settings
@@ -83,12 +90,12 @@ model = dict(
             allowed_border=-1,
             center_ratio=0.2,
             ignore_ratio=0.5),
-        rpn_proposal=dict(nms_post=1000, max_per_img=300),
+        rpn_proposal=dict(nms_post=1000, max_per_img=200),
         rcnn=dict(
             assigner=dict(pos_iou_thr=0.6, neg_iou_thr=0.6, min_pos_iou=0.6),
             sampler=dict(type='RandomSampler', num=256))),
     test_cfg=dict(
-        rpn=dict(nms_post=1000, max_per_img=300), rcnn=dict(score_thr=1e-3)),
+        rpn=dict(nms_post=1000, max_per_img=200), rcnn=dict(score_thr=1e-3)),
     sub_images = sub_images
 )
 # optimizer
@@ -98,8 +105,8 @@ optimizer_config = dict(
 
 classes = ('merge',)
 data = dict(
-    samples_per_gpu=1,  # Batch size of a single GPU
-    workers_per_gpu=1,  # Worker to pre-fetch data for each single GPU
+    samples_per_gpu=3,  # Batch size of a single GPU
+    workers_per_gpu=3,  # Worker to pre-fetch data for each single GPU
     train=dict(
         img_prefix='my-dataset/train',
         classes=classes,
