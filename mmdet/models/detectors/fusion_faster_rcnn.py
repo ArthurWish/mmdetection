@@ -1,13 +1,29 @@
 import torch
 from torch import nn
-from torchvision import transforms
-
 from .faster_rcnn import FasterRCNN
-from ..builder import DETECTORS
-from PIL import Image
-import numpy as np
+from ..builder import DETECTORS, build_backbone
+
+def default_fusion(detector, imgs):
+    feature_list = [
+        detector.backbone(sub_img)
+        if detector.fusion_cfg['single_backbone']
+        else detector.backbones[index](sub_img)
+        for index, sub_img in enumerate(imgs)
+    ]
+    feature_concat = tuple(torch.cat(x, dim=1) for x in zip(*feature_list))
+    return [
+        nn.Sequential(
+            nn.Conv2d(feature_concat_channel.size(1), int(
+                feature_concat_channel.size(1) / len(feature_list)), kernel_size=1),
+            nn.BatchNorm2d(
+                int(feature_concat_channel.size(1) / len(feature_list))),
+            nn.ReLU()
+        ).cuda()(feature_concat_channel)
+        for feature_concat_channel in feature_concat
+    ] if len(feature_list) > 1 else feature_concat
+
 @DETECTORS.register_module()
-class SiameseRPNV2(FasterRCNN):
+class FusionFasterRCNN(FasterRCNN):
     def __init__(self,
                  backbone,
                  rpn_head,
@@ -17,9 +33,19 @@ class SiameseRPNV2(FasterRCNN):
                  neck=None,
                  pretrained=None,
                  init_cfg=None,
-                 sub_images=()):
+                 sub_images=(),
+                 fusion_cfg=None):
+        """[summary]
 
-        super(SiameseRPNV2, self).__init__(
+        Args:
+            sub_images (tuple, optional): the tuple of sub images' name. Defaults to ().
+            fusion_cfg (dict, optional): config to control fusion config. 
+                Default: dict(
+                    single_backbone=True,
+                    fusion_func=None
+                )
+        """
+        super(FusionFasterRCNN, self).__init__(
             backbone=backbone,
             neck=neck,
             rpn_head=rpn_head,
@@ -29,37 +55,26 @@ class SiameseRPNV2(FasterRCNN):
             pretrained=pretrained,
             init_cfg=init_cfg)
         self.sub_images = sub_images
+        self.fusion_cfg = dict(
+            single_backbone=True,
+            fusion_func=default_fusion
+        )
+        if isinstance(fusion_cfg, dict):
+            if hasattr(fusion_cfg, 'single_backbone') and isinstance(fusion_cfg['single_backbone'], bool):
+                self.fusion_cfg['single_backbone'] = fusion_cfg['single_backbone']
+            if hasattr(fusion_cfg, 'fusion_func') and callable(fusion_cfg['fusion_func']):
+                self.fusion_cfg['fusion_func'] = fusion_cfg['fusion_func']
+        if not self.fusion_cfg['single_backbone']:
+            self.backbones = nn.ModuleList(
+                [build_backbone(backbone) for i in sub_images])
 
     def extract_feat(self, imgs):
         assert len(imgs) == len(self.sub_images)
-        # feature_list = []
-        # img = torch.cat([img[0], img[1]], dim=1)
-        # img = imgs[0].detach().cpu().numpy()
-        # im = np.squeeze(img, axis=0).transpose(1,2,0)
-        # im = Image.fromarray(im, 'RGB')
-        # im.save("xxresult.png")
-        
-        out = self.backbone(imgs)
-
-        # for input_img in img:
-        #     feature = self.backbone(input_img)
-        #     # List[list[tensor,tensor,tensor,tensor], list[tensor,tensor,tensor,tensor]]
-        #     feature_list.append(feature)
-        # feature_concat = tuple(torch.cat(x, dim=1) for x in zip(*feature_list))
-        # # print(len(img))
-        # out = [
-        #     nn.Sequential(
-        #         nn.Conv2d(feature_concat_channel.size(1), int(
-        #             feature_concat_channel.size(1) / len(img)), kernel_size=1),
-        #         nn.BatchNorm2d(int(feature_concat_channel.size(1) / len(img))),
-        #         nn.ReLU()
-        #     ).cuda()(feature_concat_channel)
-        #     for feature_concat_channel in feature_concat
-        # ] if len(img) > 1 else feature_concat
+        out = self.fusion_cfg['fusion_func'](self, imgs)
         if self.with_neck:
             out = self.neck(out)
         return out
-    
+
     def forward_dummy(self, imgs):
         outs = ()
         # backbone
@@ -134,8 +149,8 @@ class SiameseRPNV2(FasterRCNN):
             return self.simple_test(imgs_list[0], img_metas[0], **kwargs)
         else:
             assert imgs_list[0][0].size(0) == 1, 'aug test does not support ' \
-                                            'inference with batch size ' \
-                                            f'{imgs_list[0][0].size(0)}'
+                'inference with batch size ' \
+                f'{imgs_list[0][0].size(0)}'
             # TODO: support test augmentation for predefined proposals
             assert 'proposals' not in kwargs
             return self.aug_test(imgs_list, img_metas, **kwargs)

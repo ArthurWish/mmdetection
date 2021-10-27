@@ -40,6 +40,7 @@ from .yolox import YOLOX
 from .siamese_rpn import SiameseRPN
 from .siamese_rpn_v2 import SiameseRPNV2
 from .siamese_rpn_v3 import SiameseRPNV3
+from .fusion_faster_rcnn import FusionFasterRCNN
 __all__ = [
     'ATSS', 'BaseDetector', 'SingleStageDetector', 'TwoStageDetector', 'RPN',
     'KnowledgeDistillationSingleStageDetector', 'FastRCNN', 'FasterRCNN',
@@ -48,5 +49,6 @@ __all__ = [
     'NASFCOS', 'PointRend', 'GFL', 'CornerNet', 'PAA', 'YOLOV3', 'YOLACT',
     'VFNet', 'DETR', 'TridentFasterRCNN', 'SparseRCNN', 'SCNet', 'SOLO',
     'DeformableDETR', 'AutoAssign', 'YOLOF', 'CenterNet', 'YOLOX',
-    'TwoStagePanopticSegmentor', 'PanopticFPN', 'SiameseRPN', 'SiameseRPNV2', 'SiameseRPNV3'
+    'TwoStagePanopticSegmentor', 'PanopticFPN', 'SiameseRPN', 'SiameseRPNV2', 'SiameseRPNV3',
+    'FusionFasterRCNN'
 ]

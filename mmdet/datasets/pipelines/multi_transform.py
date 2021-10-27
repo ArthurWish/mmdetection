@@ -14,12 +14,13 @@ from ..builder import PIPELINES
 @PIPELINES.register_module()
 class MultiLoadImageFromFile(LoadImageFromFile):
     def __call__(self, results):
-        assert mmcv.is_list_of(results['img_info']['filename'], str)
+        # assert mmcv.is_list_of(results['img_info']['filename'], str)
         if self.file_client is None:
             self.file_client = mmcv.FileClient(**self.file_client_args)
 
         if results['img_prefix'] is not None:
-            filename = [osp.join(results['img_prefix'], x) for x in results['img_info']['filename']]
+            filename = [osp.join(results['img_prefix'], x)
+                        for x in results['img_info']['filename']]
         else:
             filename = results['img_info']['filename']
 
@@ -43,7 +44,7 @@ class MultiLoadImageFromFile(LoadImageFromFile):
 @PIPELINES.register_module()
 class MultiResize(Resize):
     def __call__(self, results):
-        assert mmcv.is_list_of(results['img'], ndarray)
+        # assert mmcv.is_list_of(results['img'], ndarray)
         if 'scale' not in results:
             if 'scale_factor' in results:
                 img_shape = results['img'][0].shape[:2]  # use first index
@@ -111,7 +112,7 @@ class MultiResize(Resize):
 @PIPELINES.register_module()
 class MultiRandomFlip(RandomFlip):
     def __call__(self, results):
-        assert mmcv.is_list_of(results['img'], ndarray)
+        # assert mmcv.is_list_of(results['img'], ndarray)
         if 'flip' not in results:
             if isinstance(self.direction, list):
                 # None means non-flip
@@ -159,7 +160,7 @@ class MultiRandomFlip(RandomFlip):
 @PIPELINES.register_module()
 class MultiNormalize(Normalize):
     def __call__(self, results):
-        assert mmcv.is_list_of(results['img'], ndarray)
+        # assert mmcv.is_list_of(results['img'], ndarray)
         for key in results.get('img_fields', ['img']):
             results[key] = [mmcv.imnormalize(sub_img, self.mean, self.std,
                                              self.to_rgb) for sub_img in results[key]]
@@ -194,7 +195,8 @@ class MultiPad(Pad):
         pad_shape = results['pad_shape'][:2]
         pad_val = self.pad_val.get('masks', 0)
         for key in results.get('mask_fields', []):
-            results[key] = [sub_img.pad(pad_shape, pad_val=pad_val) for sub_img in results[key]]
+            results[key] = [sub_img.pad(pad_shape, pad_val=pad_val)
+                            for sub_img in results[key]]
 
     def _pad_seg(self, results):
         pad_val = self.pad_val.get('seg', 255)
@@ -203,14 +205,14 @@ class MultiPad(Pad):
                 sub_img, shape=results['pad_shape'][:2], pad_val=pad_val) for sub_img in results[key]]
 
     def __call__(self, results):
-        assert mmcv.is_list_of(results['img'], ndarray)
+        # assert mmcv.is_list_of(results['img'], ndarray)
         return super(MultiPad, self).__call__(results)
 
 
 @PIPELINES.register_module()
 class MultiDefaultFormatBundle(DefaultFormatBundle):
     def __call__(self, results):
-        assert mmcv.is_list_of(results['img'], ndarray)
+        # assert mmcv.is_list_of(results['img'], ndarray)
         if 'img' in results:
             # add default meta keys
             results = self._add_default_meta_keys(results)
@@ -251,7 +253,7 @@ class MultiImageToTensor(ImageToTensor):
     def __call__(self, results):
         for key in self.keys:
             imgs = []
-            assert mmcv.is_list_of(results[key], ndarray)
+            # assert mmcv.is_list_of(results[key], ndarray)
             for sub_img in results[key]:
                 img = sub_img
                 if len(img.shape) < 3:

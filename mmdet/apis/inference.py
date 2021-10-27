@@ -125,7 +125,7 @@ def inference_detector(model, imgs):
             data = dict(img=img)
         else:
             # add information into dict
-            data = dict(img_info=dict(filename=img), img_prefix=None)
+            data = dict(img_info=dict(filename=[img]), img_prefix=None)
         # build the data pipeline
         data = test_pipeline(data)
         datas.append(data)
@@ -133,7 +133,8 @@ def inference_detector(model, imgs):
     data = collate(datas, samples_per_gpu=len(imgs))
     # just get the actual data from DataContainer
     data['img_metas'] = [img_metas.data[0] for img_metas in data['img_metas']]
-    data['img'] = [img.data[0] for img in data['img']]
+    data['img'] = [img[0].data for img in data['img']] # img[0] get the value of list
+
     if next(model.parameters()).is_cuda:
         # scatter to specified GPU
         data = scatter(data, [device])[0]
